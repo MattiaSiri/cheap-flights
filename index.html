@@ -6,7 +6,7 @@
   <style>
     body{font-family:sans-serif;margin:40px auto;max-width:640px;line-height:1.4}
     label{display:block;margin-top:12px}
-    input,button{padding:6px 10px;font-size:1em}
+    input,select,button{padding:6px 10px;font-size:1em}
     button{margin-top:12px}
     ul{list-style:none;padding:0}
     li{padding:8px 0;border-bottom:1px solid #ddd}
@@ -18,10 +18,25 @@
   <h1>Trova voli economici</h1>
   <form id="search">
     <label>Da (IATA o Paese)
-      <input name="from" placeholder="FCO o IT" required>
+      <select name="from" required>
+        <option value="">-- Seleziona --</option>
+        <option value="FCO">Roma Fiumicino (FCO)</option>
+        <option value="MXP">Milano Malpensa (MXP)</option>
+        <option value="IT">Italia (tutti gli aeroporti)</option>
+        <option value="FR">Francia</option>
+        <option value="DE">Germania</option>
+        <option value="ES">Spagna</option>
+      </select>
     </label>
     <label>A (lascia vuoto o anywhere)
-      <input name="to" placeholder="anywhere">
+      <select name="to">
+        <option value="">-- Ovunque --</option>
+        <option value="anywhere">Ovunque</option>
+        <option value="PAR">Parigi (PAR)</option>
+        <option value="LON">Londra (LON)</option>
+        <option value="NYC">New York (NYC)</option>
+        <option value="JP">Giappone (JP)</option>
+      </select>
     </label>
     <label>Data precisa
       <input type="date" name="date">
@@ -36,7 +51,7 @@
 
 <script>
 // ===== CONFIGURAZIONE – incolla QUI la tua X‑RapidAPI‑Key =====
-const API_KEY  = '6fadb09a4amsh7ee2eb3653eb79dp110ffbjsnc5c9d0bea6c0'; // ← sostituisci con quella del tuo dashboard RapidAPI
+const API_KEY  = '6fadb09a4amsh7ee2eb3653eb79dp110ffbjsnc5c9d0bea6c0';
 const API_HOST = 'kiwi-com-cheap-flights.p.rapidapi.com';
 // ==============================================================
 
@@ -46,13 +61,11 @@ document.getElementById('search').addEventListener('submit', async e => {
   const qs = new URLSearchParams(new FormData(e.target));
   if (!qs.get('to')) qs.set('to', 'anywhere');
 
-  // Controllo date/minimo un campo
   if (!qs.get('date') && !qs.get('month')) {
     alert('Inserisci una data precisa OPPURE un mese intero');
     return;
   }
 
-  // Converte le date nel formato DD/MM/YYYY usato da Kiwi
   let date_from, date_to;
   if (qs.get('month')) {
     const [year, month] = qs.get('month').split('-');
