@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <title>Trova voli economici</title>
+  <style>
+    body{font-family:sans-serif;margin:40px auto;max-width:640px;line-height:1.4}
+    label{display:block;margin-top:12px}
+    input,button{padding:6px 10px;font-size:1em}
+    button{margin-top:12px}
+    ul{list-style:none;padding:0}
+    li{padding:8px 0;border-bottom:1px solid #ddd}
+    strong{font-weight:600}
+    #status{color:#555}
+  </style>
+</head>
+<body>
+  <h1>Trova voli economici</h1>
+  <form id="search">
+    <label>Da (IATA o Paese)
+      <input name="from" placeholder="FCO o IT" required>
+    </label>
+    <label>A (lascia vuoto o anywhere)
+      <input name="to" placeholder="anywhere">
+    </label>
+    <label>Data precisa
+      <input type="date" name="date">
+    </label>
+    <label>Oppure mese intero
+      <input type="month" name="month">
+    </label>
+    <button>Cerca</button>
+  </form>
+  <p id="status"></p>
+  <ul id="results"></ul>
+
+<script>
+// ===== CONFIGURAZIONE – incolla QUI la tua X‑RapidAPI‑Key =====
+const API_KEY  = '6fadb09a4amsh7ee2eb3653eb79dp110ffbjsnc5c9d0bea6c0'; // ← sostituisci con quella del tuo dashboard RapidAPI
+const API_HOST = 'kiwi-com-cheap-flights.p.rapidapi.com';
+// ==============================================================
+
+document.getElementById('search').addEventListener('submit', async e => {
+  e.preventDefault();
+
+  const qs = new URLSearchParams(new FormData(e.target));
+  if (!qs.get('to')) qs.set('to', 'anywhere');
+
+  // Controllo date/minimo un campo
+  if (!qs.get('date') && !qs.get('month')) {
+    alert('Inserisci una data precisa OPPURE un mese intero');
+    return;
+  }
+
+  // Converte le date nel formato DD/MM/YYYY usato da Kiwi
+  let date_from, date_to;
+  if (qs.get('month')) {
+    const [year, month] = qs.get('month').split('-');
+    date_from = `01/${month}/${year}`;
+    date_to   = `31/${month}/${year}`;
+  } else {
+    const [year, month, day] = qs.get('date').split('-');
+    date_from = date_to = `${day}/${month}/${year}`;
+  }
+
+  const url = `https://${API_HOST}/v2/search?fly_from=${qs.get('from')}&fly_to=${qs.get('to')}&date_from=${date_from}&date_to=${date_to}&curr=EUR&sort=price&limit=20`;
+
+  document.getElementById('status').textContent = 'Caricamento…';
+  document.getElementById('results').innerHTML = '';
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'X-RapidAPI-Key':  API_KEY,
+        'X-RapidAPI-Host': API_HOST
+      }
+    });
+    if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
+    const json = await res.json();
+    displayResults(json.data);
+  } catch (err) {
+    console.error(err);
+    alert('Errore nella richiesta: ' + err.message + '\nControlla che la key sia corretta o che la quota RapidAPI non sia esaurita.');
+  } finally {
+    document.getElementById('status').textContent = '';
+  }
+});
+
+function displayResults(arr) {
+  const ul = document.getElementById('results');
+  if (!arr || arr.length === 0) {
+    ul.innerHTML = '<li>Nessun volo trovato</li>';
+    return;
+  }
+  ul.innerHTML = arr.map(v => {
+    const date = new Date(v.route[0].local_departure).toLocaleDateString('it-IT');
+    return `<li><strong>${v.cityFrom} → ${v.cityTo}</strong><br>€${v.price} • ${date} <small>${v.fly_duration}</small></li>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
